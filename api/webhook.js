@@ -1,6 +1,6 @@
-const { sendToNotion } = require('../src/notion-handler');
-const crypto = require('crypto');
-const { logWebhookAttempt, logError } = require('../src/log-state');
+import { sendToNotion } from '../src/notion-handler.js';
+import crypto from 'crypto';
+import { logWebhookAttempt, logError } from '../src/log-state.js';
 
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -30,7 +30,7 @@ function isRelevantMessage(body) {
   return true;
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   setCorsHeaders(res);
   console.log('[WEBHOOK] Incoming request:', {
     method: req.method,
@@ -70,4 +70,4 @@ module.exports = async (req, res) => {
     console.error('[WEBHOOK] Notion error:', err);
     return res.status(500).json({ error: 'Failed to capture message', details: err.message });
   }
-}; 
+} 
