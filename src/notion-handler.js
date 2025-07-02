@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Client } = require('@notionhq/client');
+const { setNotionStatus, logError } = require('./log-state');
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const databaseId = process.env.NOTION_DATABASE_ID;
@@ -86,14 +87,19 @@ async function sendToNotion(message, maxRetries = 3) {
   let attempt = 0;
   while (attempt < maxRetries) {
     try {
-      await notion.pages.create({
+      console.log('[NOTION] Creating page with properties:', properties);
+      const response = await notion.pages.create({
         parent: { database_id: databaseId },
         properties,
       });
-      return true;
+      setNotionStatus({ connected: true, lastError: null });
+      console.log('[NOTION] Success:', response.id);
+      return { success: true, id: response.id, url: response.url };
     } catch (error) {
       attempt++;
-      console.error(`Error sending to Notion (attempt ${attempt}):`, error.message);
+      setNotionStatus({ connected: false, lastError: error.message });
+      logError(error.message || error);
+      console.error(`[NOTION] Error (attempt ${attempt}):`, error.message);
       if (attempt >= maxRetries) throw error;
       await new Promise(res => setTimeout(res, 1000 * attempt)); // Exponential backoff
     }
