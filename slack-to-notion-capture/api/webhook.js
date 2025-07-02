@@ -1,5 +1,6 @@
-const { sendToNotion } = require('../src/notion-handler');
-const crypto = require('crypto');
+import { sendToNotion } from '../src/notion-handler.js';
+import crypto from 'crypto';
+import { logWebhookAttempt, logError } from '../src/log-state.js';
 
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -29,33 +30,44 @@ function isRelevantMessage(body) {
   return true;
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   setCorsHeaders(res);
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  if (req.method === 'GET') {
-    return res.status(405).json({ error: 'GET not allowed' });
-  }
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  console.log('[WEBHOOK] Incoming request:', {
+    method: req.method,
+    headers: req.headers,
+    body: req.body,
+  });
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   let body = req.body;
-  // Vercel may not parse JSON automatically
   if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'Invalid JSON' }); }
+    try { body = JSON.parse(body); } catch (e) {
+      logError('Invalid JSON in request body');
+      return res.status(400).json({ error: 'Invalid JSON' });
+    }
   }
+  logWebhookAttempt({ type: 'webhook', body });
   if (!isValidSlackRequest({ ...req, body })) {
+    logError('Invalid Slack signature');
     return res.status(401).json({ error: 'Invalid signature' });
   }
   if (!isRelevantMessage(body)) {
+    console.log('[WEBHOOK] Ignored irrelevant message.');
     return res.status(200).json({ status: 'Ignored' });
   }
   const { text, ts, user } = body.event;
-  try {
-    await sendToNotion(text);
-    return res.status(200).json({ status: 'Captured', ts, user });
-  } catch (err) {
-    return res.status(500).json({ error: 'Failed to capture message' });
+  if (!text || !user) {
+    logError('Missing required fields: text or user');
+    return res.status(400).json({ error: 'Missing required fields: text or user' });
   }
-}; 
+  try {
+    console.log('[WEBHOOK] Sending to Notion:', { text, ts, user });
+    const notionResult = await sendToNotion(text);
+    console.log('[WEBHOOK] Notion API result:', notionResult);
+    return res.status(200).json({ status: 'Captured', ts, user, notionResult });
+  } catch (err) {
+    logError(err.message || err);
+    console.error('[WEBHOOK] Notion error:', err);
+    return res.status(500).json({ error: 'Failed to capture message', details: err.message });
+  }
+} 
