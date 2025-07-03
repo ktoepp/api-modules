@@ -77,6 +77,13 @@ async function sendToNotion(messageText) {
 }
 
 export default async function handler(req, res) {
+  // Log every request that hits the webhook
+  console.log('=== WEBHOOK HIT ===');
+  console.log('Method:', req.method);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  console.log('===================');
+
   setCorsHeaders(res);
   
   if (req.method === 'OPTIONS') {
@@ -98,8 +105,6 @@ export default async function handler(req, res) {
     }
   }
 
-  console.log('Webhook received:', { body, headers: req.headers });
-
   try {
     // Handle Slack challenge (for initial setup)
     if (body.challenge) {
@@ -113,6 +118,7 @@ export default async function handler(req, res) {
       
       // Skip bot messages
       if (body.event.bot_id) {
+        console.log('Ignored bot message');
         return res.status(200).json({ status: 'ignored bot message' });
       }
 
@@ -120,6 +126,7 @@ export default async function handler(req, res) {
       
       const notionResult = await sendToNotion(messageText);
       
+      console.log('Notion API result:', notionResult);
       return res.status(200).json({ 
         status: 'success', 
         message: 'Captured to Notion',
@@ -127,6 +134,7 @@ export default async function handler(req, res) {
       });
     }
 
+    console.log('No action needed for this request');
     return res.status(200).json({ status: 'no action needed' });
 
   } catch (error) {
