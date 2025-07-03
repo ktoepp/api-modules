@@ -9,7 +9,7 @@
     "setup": "node scripts/setup.js",
     "migrate": "node scripts/migrate.js",
     "test": "jest --runInBand",
-    "build": "webpack --mode production",
+    "build": "echo 'No build step needed for API-only project'",
     "deploy": "vercel --prod"
   },
   "dependencies": {
