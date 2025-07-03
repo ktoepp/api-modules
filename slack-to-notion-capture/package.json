@@ -22,7 +22,7 @@
     "bull": "^4.11.3",
     "node-cron": "^3.0.2",
     "googleapis": "^126.0.1",
-    "@notionhq/client": "^2.2.4",
+    "@notionhq/client": "^2.2.3",
     "nodemailer": "^6.9.4",
     "crypto-js": "^4.1.1",
     "joi": "^17.9.2",
