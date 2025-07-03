@@ -1,3 +1,15 @@
 {
-  "rootDirectory": "slack-to-notion-capture"
+  "version": 2,
+  "builds": [
+    {
+      "src": "slack-to-notion-capture/api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/slack-to-notion-capture/api/$1"
+    }
+  ]
 } 
