@@ -8,7 +8,8 @@ export default function handler(req, res) {
   }
   
   res.status(200).json({ 
-    status: 'ok', 
-    message: 'Content capture webhook is healthy!'
+    status: 'healthy', 
+    message: 'Content capture system is running!',
+    timestamp: new Date().toISOString()
   });
 } 
