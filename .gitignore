@@ -1,3 +1,4 @@
 slack-to-notion-capture/.env.backup
 slack-to-notion-capture/.env
 .vercel
+node_modules
