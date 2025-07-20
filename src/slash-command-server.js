@@ -287,107 +287,10 @@ app.post('/api/slash-command', async (req, res) => {
   return handleSlashCommand(req, res);
 });
 
-app.get('/api/test-slash', async (req, res) => {
-  console.log('[TEST-SLASH] Testing slash command setup');
-  
-  try {
-    // Test 1: Check environment variables
-    const envCheck = {
-      NOTION_API_KEY: !!process.env.NOTION_API_KEY,
-      NOTION_DATABASE_ID: !!process.env.NOTION_DATABASE_ID,
-      SLACK_SIGNING_SECRET: !!process.env.SLACK_SIGNING_SECRET
-    };
-    
-    // Test 2: Test Notion database connection
-    let notionTest = { success: false, error: null };
-    try {
-      const database = await notion.databases.retrieve({ database_id: databaseId });
-      notionTest = { 
-        success: true, 
-        databaseTitle: database.title?.[0]?.text?.content || 'Untitled',
-        databaseUrl: `https://www.notion.so/${databaseId}`
-      };
-    } catch (error) {
-      notionTest = { success: false, error: error.message };
-    }
-    
-    // Test 3: Test adding a message (if Notion connection works)
-    let messageTest = { success: false, error: null };
-    if (notionTest.success) {
-      try {
-        const testMessage = `🧪 Test message from local server at ${new Date().toLocaleString()}`;
-        
-        const newEntry = {
-          parent: {
-            database_id: databaseId
-          },
-          properties: {
-            'title': {
-              title: [
-                {
-                  text: {
-                    content: generateTitle(testMessage)
-                  }
-                }
-              ]
-            },
-            'Content': {
-              rich_text: [
-                {
-                  text: {
-                    content: testMessage
-                  }
-                }
-              ]
-            },
-            'Date': {
-              date: {
-                start: new Date().toISOString()
-              }
-            }
-          }
-        };
-        
-        await notion.pages.create(newEntry);
-        
-        messageTest = { success: true, message: testMessage };
-      } catch (error) {
-        messageTest = { success: false, error: error.message };
-      }
-    }
-    
-    // Return comprehensive test results
-    return res.status(200).json({
-      timestamp: new Date().toISOString(),
-      environment: envCheck,
-      notionConnection: notionTest,
-      messageTest: messageTest,
-      setupInstructions: {
-        slackApp: 'Create a Slack app and add a slash command /ntn pointing to this endpoint',
-        notionPage: 'Create a Notion page and share it with your integration',
-        environmentVariables: {
-          NOTION_API_KEY: 'Your Notion integration API key',
-          NOTION_PAGE_ID: 'The ID of the page where messages will be added',
-          SLACK_SIGNING_SECRET: 'Your Slack app signing secret'
-        }
-      }
-    });
-    
-  } catch (error) {
-    console.error('[TEST-SLASH] Error:', error);
-    return res.status(500).json({
-      error: 'Test failed',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
 // Start server
 app.listen(port, () => {
   console.log(`🚀 Slack Slash Command Server running on port ${port}`);
   console.log(`📝 Slash command endpoint: http://localhost:${port}/api/slash-command`);
-  console.log(`🧪 Test endpoint: http://localhost:${port}/api/test-slash`);
   console.log(`💚 Health check: http://localhost:${port}/health`);
   
   // Check environment variables
